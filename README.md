@@ -27,6 +27,10 @@ Once the deal.II library is compiled, for instance, to "~/dealii-dev/bin/", foll
 3. make debug or make release
 4. make
 
+### Potential compilation and compatibility issues
+1. Depending on your compiler, during compilation, you might receive some warning messages like below: `warning: missing braces around initializer for ‘std::array<dealii::LinearOperator<dealii::Vector<double>, dealii::Vector<double>, dealii::internal::LinearOperatorImplementation::EmptyPayload>, 2>’ [-Wmissing-braces]`. These warning messages should not have any negative impact and could be ignored.
+2. The code uses the `SolutionTransfer` class during the adaptive mesh refinement technique. The member function `interpolate()` of the `SolutionTransfer` class has different interfaces between the develop ("master") branch and older versions of deal.ii (for instance, 9.4.0). If you use the develop branch, you should use the following interface: `interpolate(std::vector< VectorType > & all_out)`. If you use an older version of deal.ii, you should use the following interface: `interpolate(const std::vector< VectorType > & all_in, std::vector< VectorType > & all_out )`. Please look at the interfaces of the member function `interpolate()` in the `SolutionTransfer` class in the specific version of deal.ii used by you.
+
 ### How to run
 1. Go into one of the examples folders.
 2. For instance a 2D test case: go into simple_shear_cyclic_load/cg_solve/
