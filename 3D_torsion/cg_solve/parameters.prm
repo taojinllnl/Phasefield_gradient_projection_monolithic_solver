@@ -115,7 +115,7 @@ subsection Nonlinear solver
   set Tolerance displacement increment      = 1.0e-6
   
   # Phasefield increment tolerance
-  set Tolerance phasefield increment        = 1.0e-6
+  set Tolerance phasefield increment        = 1.0e-3
 end
 
 subsection Time
