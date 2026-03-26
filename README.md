@@ -55,9 +55,6 @@ Once the deal.II library is compiled, for instance, to "~/dealii-dev/bin/", foll
 3. make debug or make release
 4. make
 
-### Potential compilation and compatibility issues
-1. Depending on your compiler, during compilation, you might receive some warning messages like below: `warning: missing braces around initializer for ‘std::array<dealii::LinearOperator<dealii::Vector<double>, dealii::Vector<double>, dealii::internal::LinearOperatorImplementation::EmptyPayload>, 2>’ [-Wmissing-braces]`. These warning messages should not have any negative impact and could be ignored.
-
 ### How to run
 1. Go into one of the examples folders.
 2. For instance a 2D test case: go into simple_shear_cyclic_load/cg_solve/
