@@ -5375,8 +5375,20 @@ namespace PhaseField
 
 		const auto op_dMdT = op_zT_W_matrix_d * op_M_matrix * transpose_operator(op_zT_W_matrix_d);
 
-		const auto op_zT_wMwT_z = block_operator<2, 2, BlockVector<double>>({op_uMuT, op_uMdT,
-										     op_dMuT, op_dMdT});
+		//const auto op_zT_wMwT_z = block_operator<2, 2, BlockVector<double>>({op_uMuT, op_uMdT,
+		//								     op_dMuT, op_dMdT});
+		
+	        const std::array<std::array<dealii::LinearOperator<dealii::Vector<double>,
+		                                                   dealii::Vector<double>,
+								  dealii::internal::LinearOperatorImplementation::EmptyPayload>,
+					   2>, 
+				2>
+		ops = {{
+		    {{ op_uMuT, op_uMdT }},
+		    {{ op_dMuT, op_dMdT }}
+		}};
+		
+		const auto op_zT_wMwT_z = block_operator<2, 2, BlockVector<double>>(ops);
 
 		const auto op_total = op_zT_B0_z - op_zT_wMwT_z;
 
