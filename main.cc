@@ -268,32 +268,104 @@ namespace PhaseField
       }
   }
 
+  // Various phase-field degradation function
   double degradation_function(const double d,
+			      const double p,
+			      const double a1,
+			      const double a2,
+			      const double a3,
 			      const std::string & model_name)
   {
-    return (1.0 - d) * (1.0 - d);
+    double value = 0.0;
+
+    if (   model_name == "AT2"
+	|| model_name == "AT1-Griffith")
+      value = (1.0 - d) * (1.0 - d);
+    else if (   model_name == "PFCZM"
+	     || model_name == "AT1-Cohesive")
+      {
+	const double f1 = std::pow(std::abs(1-d), p);
+	const double f2 = f1 + a1*d + a1*a2*d*d + a1*a3*d*d*d;
+	value = f1/f2;
+      }
+    else
+      Assert(false,
+      	     ExcMessage("The phase-field degradation function has not been implemented!"));
+
+    return value;
   }
 
   double degradation_function_derivative(const double d,
+					 const double p,
+					 const double a1,
+					 const double a2,
+					 const double a3,
 					 const std::string & model_name)
   {
-    return 2.0 * (d - 1.0);
+    double value = 0.0;
+
+    if (   model_name == "AT2"
+    	|| model_name == "AT1-Griffith")
+      value = 2.0 * (d - 1.0);
+    else if (   model_name == "PFCZM"
+	     || model_name == "AT1-Cohesive")
+      {
+	const double f1 = std::pow(std::abs(1-d), p);
+        const double f2 = f1 + a1*d + a1*a2*d*d + a1*a3*d*d*d;
+        const double f1_1 = (-p) * std::pow(std::abs(1-d), p-1);
+        const double f2_1 = f1_1 + a1 + 2*a1*a2*d + 3*a1*a3*d*d;
+	value = (f1_1 * f2 - f1 * f2_1) / (f2 * f2);
+      }
+    else
+      Assert(false,
+      	     ExcMessage("The phase-field degradation function has not been implemented!"));
+
+    return value;
   }
 
   double degradation_function_2nd_order_derivative(const double d,
+						   const double p,
+						   const double a1,
+						   const double a2,
+						   const double a3,
 						   const std::string & model_name)
   {
-    (void) d;
-    return 2.0;
+    double value = 0.0;
+
+    if (   model_name == "AT2"
+    	|| model_name == "AT1-Griffith")
+      value = 2.0;
+    else if (   model_name == "PFCZM"
+	     || model_name == "AT1-Cohesive")
+      {
+	const double f1 = std::pow(std::abs(1-d), p);
+	const double f2 = f1 + a1*d + a1*a2*d*d + a1*a3*d*d*d;
+	const double f1_1 = (-p) * std::pow(std::abs(1-d), p-1);
+	const double f2_1 = f1_1 + a1 + 2*a1*a2*d + 3*a1*a3*d*d;
+	const double f1_2 = p * (p-1) * std::pow(std::abs(1-d), p-2);
+	const double f2_2 = f1_2 + 2*a1*a2 + 6*a1*a3*d;
+	const double f3 = f1_1 * f2 - f1 * f2_1;
+	const double f4 = f2 * f2;
+	const double f3_1 = f1_2 * f2 - f1 * f2_2;
+	const double f4_1 = 2 * f2 * f2_1;
+	value = (f3_1 * f4 - f3 * f4_1) / (f4 * f4);
+      }
+    else
+      Assert(false,
+      	     ExcMessage("The phase-field degradation function has not been implemented!"));
+
+    return value;
   }
 
+  // Various phase-field geometric function
   inline double phasefield_geometry_function(const double d,
 					     const std::string & model_name)
   {
     double value = 0.0;
     if (model_name == "AT2")
       value = d * d;
-    else if (model_name == "AT1")
+    else if (   model_name == "AT1-Griffith"
+	     || model_name == "AT1-Cohesive")
       value = d;
     else if (model_name == "PFCZM")
       value = 2.0 * d - d * d;
@@ -310,7 +382,8 @@ namespace PhaseField
     double value = 0.0;
     if (model_name == "AT2")
       value = 2.0 * d;
-    else if (model_name == "AT1")
+    else if (   model_name == "AT1-Griffith"
+	     || model_name == "AT1-Cohesive")
       value = 1.0;
     else if (model_name == "PFCZM")
       value = 2.0 * (1-d);
@@ -328,7 +401,8 @@ namespace PhaseField
     double value = 0.0;
     if (model_name == "AT2")
       value = 2.0;
-    else if (model_name == "AT1")
+    else if (   model_name == "AT1-Griffith"
+	     || model_name == "AT1-Cohesive")
       value = 0.0;
     else if (model_name == "PFCZM")
       value = -2.0;
@@ -344,7 +418,8 @@ namespace PhaseField
     double value = 0.0;
     if (model_name == "AT2")
       value = 2.0;
-    else if (model_name == "AT1")
+    else if (   model_name == "AT1-Griffith"
+	     || model_name == "AT1-Cohesive")
       value = 8.0/3;
     else if (model_name == "PFCZM")
       value = 4 * std::atan(1);
@@ -825,6 +900,11 @@ namespace PhaseField
 					   const double length_scale,
 					   const double viscosity,
 					   const double gc,
+					   const double tensile_strength,
+					   const double p,
+					   const double a1,
+					   const double a2,
+					   const double a3,
 					   const        std::string & phasefield_name,
 					   const bool   plane_stress_flag)
       : m_lame_lambda(lame_lambda)
@@ -833,6 +913,11 @@ namespace PhaseField
       , m_length_scale(length_scale)
       , m_eta(viscosity)
       , m_gc(gc)
+      , m_tensile_strength(tensile_strength)
+      , m_p(p)
+      , m_a1(a1)
+      , m_a2(a2)
+      , m_a3(a3)
       , m_phasefield_name(phasefield_name)
       , m_plane_stress(plane_stress_flag)
       , m_phase_field_value(0.0)
@@ -909,6 +994,11 @@ namespace PhaseField
     const double m_length_scale;
     const double m_eta;
     const double m_gc;
+    const double m_tensile_strength;
+    const double m_p;
+    const double m_a1;
+    const double m_a2;
+    const double m_a3;
     const std::string m_phasefield_name;
     const bool   m_plane_stress;
     double m_phase_field_value;
@@ -937,8 +1027,8 @@ namespace PhaseField
     Vector<double>              eigenvalues(dim);
     std::vector<Tensor<1, dim>> eigenvectors(dim);
     usr_spectrum_decomposition::spectrum_decomposition<dim>(m_strain,
-  							      eigenvalues,
-  							      eigenvectors);
+  							    eigenvalues,
+  							    eigenvectors);
 
     SymmetricTensor<2, dim> strain_positive, strain_negative;
     strain_positive = usr_spectrum_decomposition::positive_tensor(eigenvalues, eigenvectors);
@@ -946,12 +1036,16 @@ namespace PhaseField
 
     SymmetricTensor<4, dim> projector_positive, projector_negative;
     usr_spectrum_decomposition::positive_negative_projectors(eigenvalues,
-  							       eigenvectors,
-							       projector_positive,
-							       projector_negative);
+  							     eigenvectors,
+							     projector_positive,
+							     projector_negative);
 
     SymmetricTensor<2, dim> stress_positive, stress_negative;
     const double degradation = degradation_function(m_phase_field_value,
+						    m_p,
+						    m_a1,
+						    m_a2,
+						    m_a3,
 						    m_phasefield_name) + m_residual_k;
     const double I_1 = trace(m_strain);
 
@@ -1016,6 +1110,10 @@ namespace PhaseField
       : m_length_scale(0.0)
       , m_gc(0.0)
       , m_viscosity(0.0)
+      , m_p(0.0)
+      , m_a1(0.0)
+      , m_a2(0.0)
+      , m_a3(0.0)
     {}
 
     virtual ~PointHistory() = default;
@@ -1026,9 +1124,35 @@ namespace PhaseField
 		   const double gc,
 		   const double viscosity,
 		   const double residual_k,
+		   const double tensile_strength,
+		   const double p,
+		   const double a2,
+		   const double a3,
 		   const std::string & phasefield_name,
 		   const bool   plane_stress_flag)
     {
+      double E0 = lame_mu * (3*lame_lambda + 2*lame_mu) / (lame_lambda + lame_mu);
+      const double phasefield_geo_constant = phasefield_coefficient_constant(phasefield_name);
+
+      // 2D plane stress case
+      if (    dim == 2
+  	   && plane_stress_flag)
+        {
+          double my_lambda = 2 * lame_mu * lame_lambda / (lame_lambda + 2 * lame_mu);
+          E0 = lame_mu * (3*my_lambda + 2*lame_mu) / (my_lambda + lame_mu);
+        }
+
+      double a1 = 0.0;
+      if (phasefield_name == "PFCZM")
+        a1 = 4.0 / (phasefield_geo_constant * length_scale)
+      	   * gc * E0 / (tensile_strength * tensile_strength);
+      else if (phasefield_name == "AT1-Cohesive")
+	a1 = 2.0 / (phasefield_geo_constant * length_scale)
+   	   * gc * E0 / (tensile_strength * tensile_strength);
+      else
+	a1 = 0.0;
+
+
       m_material =
               std::make_shared<LinearIsotropicElasticityAdditiveSplit<dim>>(lame_lambda,
         	                                                            lame_mu,
@@ -1036,11 +1160,20 @@ namespace PhaseField
 									    length_scale,
 									    viscosity,
 									    gc,
+									    tensile_strength,
+									    p,
+									    a1,
+									    a2,
+									    a3,
 									    phasefield_name,
 									    plane_stress_flag);
       m_length_scale = length_scale;
       m_gc = gc;
       m_viscosity = viscosity;
+      m_p = p;
+      m_a1 = a1;
+      m_a2 = a2;
+      m_a3 = a3;
 
       update_field_values(SymmetricTensor<2, dim>(), 0.0, Tensor<1, dim>(), 0.0, 1.0);
     }
@@ -1109,11 +1242,36 @@ namespace PhaseField
     {
       return m_viscosity;
     }
+
+    double get_p() const
+    {
+      return m_p;
+    }
+
+    double get_a1() const
+    {
+      return m_a1;
+    }
+
+    double get_a2() const
+    {
+      return m_a2;
+    }
+
+    double get_a3() const
+    {
+      return m_a3;
+    }
+
   private:
     std::shared_ptr<LinearIsotropicElasticityAdditiveSplit<dim>> m_material;
     double m_length_scale;
     double m_gc;
     double m_viscosity;
+    double m_p;
+    double m_a1;
+    double m_a2;
+    double m_a3;
   };
 
   template <int dim>
@@ -1240,6 +1398,7 @@ namespace PhaseField
     void make_grid_case_9();
     void make_grid_case_10();
     void make_grid_case_11();
+    void make_grid_case_12();
 
     void setup_system();
 
@@ -1637,6 +1796,13 @@ namespace PhaseField
     std::ifstream myfile (data_file);
 
     double lame_lambda, lame_mu, length_scale, gc, viscosity, residual_k;
+
+    // add several material parameters for non AT-2 models
+    double tensile_strength;
+    double p;
+    double a2;
+    double a3;
+
     int material_region;
     double poisson_ratio;
     if (myfile.is_open())
@@ -1649,29 +1815,140 @@ namespace PhaseField
 		       >> length_scale
 		       >> gc
 		       >> viscosity
-		       >> residual_k)
+		       >> residual_k
+		       >> tensile_strength
+		       >> p
+		       >> a2
+		       >> a3)
           {
             m_material_data[material_region] = {lame_lambda,
         	                                lame_mu,
 						length_scale,
 						gc,
 						viscosity,
-                                                residual_k};
+                                                residual_k,
+						tensile_strength,
+						p,
+						a2,
+						a3};
             poisson_ratio = lame_lambda / (2*(lame_lambda + lame_mu));
             Assert( (poisson_ratio <= 0.5)&(poisson_ratio >=-1.0) , ExcInternalError());
+
+            const double c_alpha = phasefield_coefficient_constant(m_parameters.m_phasefield_name);
+	    double E0 = lame_mu * (3*lame_lambda + 2*lame_mu) / (lame_lambda + lame_mu);
 
             m_logfile << "\tRegion " << material_region << " : " << std::endl;
             m_logfile << "\t\tLame lambda = " << lame_lambda << std::endl;
             m_logfile << "\t\tLame mu = "  << lame_mu << std::endl;
+            m_logfile << "\t\tYoung's modulus (E0) = "  << E0 << std::endl;
             m_logfile << "\t\tPoisson ratio = "  << poisson_ratio << std::endl;
             m_logfile << "\t\tPhase field length scale (l) = " << length_scale << std::endl;
             m_logfile << "\t\tCritical energy release rate (gc) = "  << gc << std::endl;
             m_logfile << "\t\tViscosity for regularization (eta) = "  << viscosity << std::endl;
             m_logfile << "\t\tResidual_k (k) = "  << residual_k << std::endl;
+            m_logfile << "\t\tTensile strength (ft) = "  << tensile_strength << std::endl;
+            m_logfile << "\t\tp (the polynomial order of the term (1-d)^p\n"
+                         "\t\t\tin the degradation function) = "
+        	      << p << std::endl;
+            m_logfile << "\t\ta2 (the coefficient of the a1*a2*d^2 term\n"
+                         "\t\t\tin the denominator of the degradation function) = "
+        	      << a2 << std::endl;
+            m_logfile << "\t\ta3 (the coefficient of the a1*a3*d^3 term\n"
+                         "\t\t\tin the denominator of the degradation function) = "
+        	      << a3 << std::endl;
+
+            // 2D plane stress case
+            if (    dim == 2
+        	 && m_parameters.m_plane_stress)
+              {
+                double my_lambda = 2 * lame_mu * lame_lambda / (lame_lambda + 2 * lame_mu);
+                E0 = lame_mu * (3*my_lambda + 2*lame_mu) / (my_lambda + lame_mu);
+              }
 
             if (m_parameters.m_phasefield_name == "AT2")
-              m_logfile << "\t\tFor AT-2 model, tensile-strength (ft), p, a2, and a3 are irrelevant."
-	                << std::endl;
+              {
+        	m_logfile << "\t\tFor AT-2 model, tensile-strength (ft), p, a2, and a3 are irrelevant."
+        		  << std::endl;
+              }
+            else if (m_parameters.m_phasefield_name == "AT1-Griffith")
+              {
+		const double proper_l = gc * E0 / (c_alpha * tensile_strength * tensile_strength);
+		const double proper_ft = std::sqrt( gc * E0 / (c_alpha * length_scale) );
+		m_logfile << "\t\tFor AT-1 (Griffith) model, the provided tensile strength (ft) = "
+			  << tensile_strength << std::endl;
+		m_logfile << "\t\tHowever, based on the formular ft = sqrt[gc*E0/(c_alpha*l)]," << std::endl;
+		m_logfile << "\t\tthe actual material tensile strength should be "
+			  << proper_ft << std::endl;
+		m_logfile << "\t\tOr in order to use the provided strength (" << tensile_strength << "),"
+			  << std::endl;
+		m_logfile << "\t\tthe actual length-scale l should be "
+			  << proper_l << std::endl;
+		m_logfile << "\t\tFor AT-1 (Griffith) model, since the standard quadratic\n"
+			     "\t\tdegradation funciton is used, p, a2, and a3 are irrelevant."
+			  << std::endl;
+              }
+            else if (m_parameters.m_phasefield_name == "AT1-Cohesive")
+              {
+        	if ( std::fabs(p-1) < 1.0e-9 )
+        	  {
+        	    m_logfile << "\t\tFor AT-1 (cohesive) model, quasi-linear degradation is adopted:\n"
+		                 "\t\t\t g(d) = (1-d)/(1-d + a1*d)"
+		              << std::endl;
+        	    AssertThrow((a2 == 0) && (a3 == 0),
+        	            	ExcMessage("For AT-1 quasi-linear cohesive model, "
+        	            	           "a2 = a3 = 0"));
+        	    double upper_l = 3.0*gc*E0 / (4.0*tensile_strength*tensile_strength);
+        	    m_logfile << "\t\tThe provided length-scale l (" << length_scale
+        	              << ") should be smaller than the upper limit "
+        	              << upper_l << std::endl;
+        	    AssertThrow(length_scale < upper_l,
+        	    	        ExcMessage("The provided length-scale is over the "
+        	    		           "upper limit!"));
+        	  }
+        	else if ( std::fabs(p-2) < 1.0e-9 )
+        	  {
+        	    m_logfile << "\t\tFor AT-1 (cohesive) model, quasi-quadratic degradation is adopted:\n"
+        	    		 "\t\t\t g(d) = (1-d)^2/[(1-d)^2 + a1*d + a1*a2*d^2]"
+        	              << std::endl;
+        	    AssertThrow((a2 >= 1) && (a3 == 0),
+        	            	ExcMessage("For AT-1 quasi-quadratic cohesive model, "
+        	            	"a2 >=1 and a3 = 0"));
+        	    double upper_l = 3.0*gc*E0 / (4.0*(a2+2)*tensile_strength*tensile_strength);
+        	    m_logfile << "\t\tThe provided length-scale l (" << length_scale
+        	              << ") should be smaller than the upper limit "
+        	              << upper_l << std::endl;
+        	    AssertThrow(length_scale < upper_l,
+        	            	ExcMessage("The provided length-scale is over the "
+        	            	           "upper limit!"));
+        	  }
+        	else
+        	  AssertThrow(false,
+        	  	      ExcMessage("For AT-1 cohesive model, "
+        	  		         "p = 1 (quasi-linear) or 2 (quasi-quadratic)"));
+              }
+            else if (m_parameters.m_phasefield_name == "PFCZM")
+              {
+        	double lch = gc * E0 / (tensile_strength*tensile_strength);
+        	double coeff = 4.0 / (c_alpha * (a2 + p + 0.5));
+        	double upper_l = lch * coeff;
+
+        	m_logfile << "\t\tThe provided length-scale l (" << length_scale
+        	          << ") should be smaller than the upper limit "
+        	          << upper_l << std::endl;
+
+        	m_logfile << "\t\tIf the first step has negative total energy, "
+        	          << "the length-scale should be reduced further"
+			  << std::endl;
+
+        	AssertThrow(length_scale < upper_l,
+			    ExcMessage("The provided length-scale is over the "
+				       "upper limit!"));
+              }
+            else
+              {
+        	AssertThrow(false,
+  	                    ExcMessage("Chosen phase-field model not implemented!"));
+              }
           }
 
         if (m_material_data.size() != total_material_regions)
@@ -1757,6 +2034,10 @@ namespace PhaseField
     double gc = 0.0;
     double viscosity = 0.0;
     double residual_k = 0.0;
+    double tensile_strength = 0.0;
+    double p = 0.0;
+    double a2 = 0.0;
+    double a3 = 0.0;
 
     for (const auto &cell : m_triangulation.active_cell_iterators())
       {
@@ -1769,6 +2050,10 @@ namespace PhaseField
             gc                         = m_material_data[material_id][3];
             viscosity                  = m_material_data[material_id][4];
             residual_k                 = m_material_data[material_id][5];
+            tensile_strength           = m_material_data[material_id][6];
+            p                          = m_material_data[material_id][7];
+            a2                         = m_material_data[material_id][8];
+            a3                         = m_material_data[material_id][9];
 	  }
         else
           {
@@ -1782,7 +2067,8 @@ namespace PhaseField
 
         for (unsigned int q_point = 0; q_point < m_n_q_points; ++q_point)
           lqph[q_point]->setup_lqp(lame_lambda, lame_mu, length_scale,
-				   gc, viscosity, residual_k,
+				   gc, viscosity, residual_k,tensile_strength,
+				   p, a2, a3,
 				   m_parameters.m_phasefield_name,
 				   m_parameters.m_plane_stress);
       }
@@ -2200,6 +2486,8 @@ namespace PhaseField
       make_grid_case_10();
     else if (m_parameters.m_scenario == 11)
       make_grid_case_11();
+    else if (m_parameters.m_scenario == 12)
+      make_grid_case_12();
     else
       Assert(false, ExcMessage("The scenario has not been implemented!"));
 
@@ -3129,7 +3417,7 @@ namespace PhaseField
 	    for (const auto &cell : m_triangulation.active_cell_iterators())
 	      {
 		if (    (cell->center()[1] > 242.0)
-		     && (cell->center()[1] < 312.5)
+		     && (cell->center()[1] < 360.0)
 		     && (cell->center()[0] < 258.0) )
 		  {
 		    material_id = cell->material_id();
@@ -3407,6 +3695,51 @@ namespace PhaseField
   }
 
   template <int dim>
+  void PhaseFieldMonolithicSolve<dim>::make_grid_case_12()
+  {
+    for (unsigned int i = 0; i < 80; ++i)
+      m_logfile << "*";
+    m_logfile << std::endl;
+    m_logfile << "\t\t\t1-D bar (structured)" << std::endl;
+    for (unsigned int i = 0; i < 80; ++i)
+      m_logfile << "*";
+    m_logfile << std::endl;
+
+    AssertThrow(dim==2, ExcMessage("The dimension has to be 2D!"));
+
+    double const length = 200.0;
+    double const width = 1.0;
+    double const h_size = 0.1;
+
+    std::vector<unsigned int> repetitions(dim, 1);
+    repetitions[0] = length / h_size;
+    repetitions[1] = width  / h_size;
+
+    GridGenerator::subdivided_hyper_rectangle(m_triangulation,
+				     	      repetitions,
+					      Point<dim>( 0.0,      0.0 ),
+					      Point<dim>( length,   width ) );
+
+    for (const auto &cell : m_triangulation.active_cell_iterators())
+      for (const auto &face : cell->face_iterators())
+	{
+	  if (face->at_boundary() == true)
+	    {
+	      if ( (std::fabs(face->center()[0] - 0.0 ) < 1.0e-9) )
+		face->set_boundary_id(0);
+	      else if ( (std::fabs(face->center()[0] - length ) < 1.0e-9) )
+		face->set_boundary_id(1);
+	      else if ( (std::fabs(face->center()[1] - 0.0 ) < 1.0e-9) )
+		face->set_boundary_id(2);
+	      else if ( (std::fabs(face->center()[1] - width ) < 1.0e-9) )
+		face->set_boundary_id(3);
+	      else
+		face->set_boundary_id(4);
+	    }
+	}
+  }
+
+  template <int dim>
   void PhaseFieldMonolithicSolve<dim>::setup_system()
   {
     m_timer.enter_subsection("Setup system");
@@ -3496,6 +3829,7 @@ namespace PhaseField
 	const FEValuesExtractors::Scalar z_displacement(2);
 
 	const FEValuesExtractors::Vector displacements(0);
+	const FEValuesExtractors::Scalar phasefield(dim);
 
 	if (   m_parameters.m_scenario == 1
 	    || m_parameters.m_scenario == 3)
@@ -3741,6 +4075,56 @@ namespace PhaseField
 		  }
 	      }
 	  }
+	else if (m_parameters.m_scenario == 12)
+	  {
+	    // Dirichlet B.C. left surface (x = 0)
+	    const int boundary_id_left_surface = 0;
+	    VectorTools::interpolate_boundary_values(m_dof_handler,
+						     boundary_id_left_surface,
+						     Functions::ZeroFunction<dim>(m_n_components),
+						     m_constraints,
+						     m_fe.component_mask(displacements));
+	    VectorTools::interpolate_boundary_values(m_dof_handler,
+						     boundary_id_left_surface,
+						     Functions::ZeroFunction<dim>(m_n_components),
+						     m_constraints,
+						     m_fe.component_mask(phasefield));
+
+	    const int boundary_id_right_surface = 1;
+	    VectorTools::interpolate_boundary_values(m_dof_handler,
+						     boundary_id_right_surface,
+						     Functions::ZeroFunction<dim>(m_n_components),
+						     m_constraints,
+						     m_fe.component_mask(y_displacement));
+	    VectorTools::interpolate_boundary_values(m_dof_handler,
+						     boundary_id_right_surface,
+						     Functions::ZeroFunction<dim>(m_n_components),
+						     m_constraints,
+						     m_fe.component_mask(phasefield));
+
+	    const double time_inc = m_time.get_delta_t();
+	    double disp_magnitude = m_time.get_magnitude();
+	    VectorTools::interpolate_boundary_values(m_dof_handler,
+						     boundary_id_right_surface,
+						     Functions::ConstantFunction<dim>(
+						       disp_magnitude*time_inc, m_n_components),
+						     m_constraints,
+						     m_fe.component_mask(x_displacement));
+
+	    const int boundary_id_bottom_surfaces = 2;
+	    VectorTools::interpolate_boundary_values(m_dof_handler,
+						     boundary_id_bottom_surfaces,
+						     Functions::ZeroFunction<dim>(m_n_components),
+						     m_constraints,
+						     m_fe.component_mask(y_displacement));
+
+	    const int boundary_id_top_surfaces = 3;
+	    VectorTools::interpolate_boundary_values(m_dof_handler,
+						     boundary_id_top_surfaces,
+						     Functions::ZeroFunction<dim>(m_n_components),
+						     m_constraints,
+						     m_fe.component_mask(y_displacement));
+	  }
 	else
 	  Assert(false, ExcMessage("The scenario has not been implemented!"));
       }
@@ -3902,6 +4286,10 @@ namespace PhaseField
 	const double gc                      = lqph[q_point]->get_critical_energy_release_rate();
 	const double eta                     = lqph[q_point]->get_viscosity();
 	const double current_positive_strain_energy = lqph[q_point]->get_current_positive_strain_energy();
+        const double p = lqph[q_point]->get_p();
+        const double a1 = lqph[q_point]->get_a1();
+        const double a2 = lqph[q_point]->get_a2();
+        const double a3 = lqph[q_point]->get_a3();
 
 	const double phasefield_value        = lqph[q_point]->get_phase_field_value();
 	const Tensor<1, dim> phasefield_grad = lqph[q_point]->get_phase_field_gradient();
@@ -3944,6 +4332,7 @@ namespace PhaseField
    	                                    * phasefield_geo_derivative
 					    + eta / delta_time  * (phasefield_value - old_phasefield)
 					    + degradation_function_derivative(phasefield_value,
+									      p, a1, a2, a3,
 					   			              m_parameters.m_phasefield_name)
 					    * current_positive_strain_energy )
 					  * N_phasefield[i]
@@ -4040,6 +4429,10 @@ namespace PhaseField
 	const double gc                      = lqph[q_point]->get_critical_energy_release_rate();
 	const double eta                     = lqph[q_point]->get_viscosity();
 	const double current_positive_strain_energy = lqph[q_point]->get_current_positive_strain_energy();
+	const double p = lqph[q_point]->get_p();
+	const double a1 = lqph[q_point]->get_a1();
+	const double a2 = lqph[q_point]->get_a2();
+	const double a3 = lqph[q_point]->get_a3();
 
 	const double phasefield_value        = lqph[q_point]->get_phase_field_value();
 
@@ -4084,6 +4477,7 @@ namespace PhaseField
                                                      * phasefield_geo_2nd_order_derivative
                 	                             + eta/delta_time
                 	                             + degradation_function_2nd_order_derivative(phasefield_value,
+												 p, a1, a2, a3,
 												 m_parameters.m_phasefield_name)
 						     * current_positive_strain_energy  )
                 	                          * N_phasefield[i] * N_phasefield[j]
@@ -4183,6 +4577,10 @@ namespace PhaseField
 	    const double gc                      = lqph[q_point]->get_critical_energy_release_rate();
 	    const double eta                     = lqph[q_point]->get_viscosity();
 	    const double current_positive_strain_energy = lqph[q_point]->get_current_positive_strain_energy();
+	    const double p = lqph[q_point]->get_p();
+	    const double a1 = lqph[q_point]->get_a1();
+	    const double a2 = lqph[q_point]->get_a2();
+	    const double a3 = lqph[q_point]->get_a3();
 
 	    const double phasefield_value        = lqph[q_point]->get_phase_field_value();
 	    const Tensor<1, dim> phasefield_grad = lqph[q_point]->get_phase_field_gradient();
@@ -4221,6 +4619,7 @@ namespace PhaseField
 	    	                	  * phasefield_geo_derivative
 			                  + eta / delta_time  * (phasefield_value - old_phasefield)
 				          + degradation_function_derivative(phasefield_value,
+									    p, a1, a2, a3,
 									    m_parameters.m_phasefield_name)
 					  * current_positive_strain_energy )
 				     * N_phasefield[i]
@@ -4318,7 +4717,7 @@ namespace PhaseField
 
         if (i == ls_max)
           {
-            alpha = 1.0;
+            //alpha = 1.0;
             break;
           }
 
@@ -4334,6 +4733,9 @@ namespace PhaseField
 
         delta_alpha_old = delta_alpha_new;
       }
+
+    //if (std::fabs(alpha) < 1.0e-3)
+    //  alpha = 1.0;
 
     if (alpha < 1.0e-3)
       alpha = 1.0;
@@ -5525,8 +5927,19 @@ namespace PhaseField
 
 		const auto op_dMdT = op_zT_W_matrix_d * op_M_matrix * transpose_operator(op_zT_W_matrix_d);
 
-		const auto op_zT_wMwT_z = block_operator<2, 2, BlockVector<double>>({op_uMuT, op_uMdT,
-										     op_dMuT, op_dMdT});
+		//const auto op_zT_wMwT_z = block_operator<2, 2, BlockVector<double>>({op_uMuT, op_uMdT,
+		//								     op_dMuT, op_dMdT});
+
+		const std::array<std::array<dealii::LinearOperator<dealii::Vector<double>,
+		                                                   dealii::Vector<double>,
+								   dealii::internal::LinearOperatorImplementation::EmptyPayload>,
+								   2>, 2>
+		ops = {{
+		    {{ op_uMuT, op_uMdT }},
+		    {{ op_dMuT, op_dMdT }}
+		}};
+
+		const auto op_zT_wMwT_z = block_operator<2, 2, BlockVector<double>>(ops);
 
 		const auto op_total = op_zT_B0_z - op_zT_wMwT_z;
 
@@ -5826,7 +6239,7 @@ namespace PhaseField
           }
         else if(m_parameters.m_type_line_search == "GradientBased")
           {
-	    // LBFGS_r_vector is the search direction
+	    // LBFGS_update is the search direction
 	    line_search_parameter = line_search_stepsize_gradient_based(LBFGS_update,
 									solution_delta);
           }
@@ -5888,22 +6301,24 @@ namespace PhaseField
 	unsigned int number_active_constraint_upper_bound = 0;
 	unsigned int number_active_constraint_lowerupper_bound = 0;
 
+	const double compare_tol = 1.0e-9;
 	for (unsigned int i = 0; i < m_dofs_per_block[m_d_dof]; ++i)
 	  {
-	    if (   solution_delta.block(m_d_dof)[i] == 0.0
-		&& solution_phasefield_total[i] == 1.0)
+	    // We should avoid to directly compare two float values
+	    if (   std::fabs(solution_delta.block(m_d_dof)[i] - 0.0) < compare_tol
+		&& std::fabs(solution_phasefield_total[i] - 1.0) < compare_tol)
 	      {
 		m_active_set_phasefield(i) = 3; //lower bound overlaps with upper bound
 		++number_active_constraint_lowerupper_bound;
 	      }
-	    else if (   solution_delta.block(m_d_dof)[i] == 0.0
-		     && solution_phasefield_total[i] != 1.0)
+	    else if (   std::fabs(solution_delta.block(m_d_dof)[i] - 0.0) < compare_tol
+		     && std::fabs(solution_phasefield_total[i] - 1.0) >= compare_tol)
 	      {
 		m_active_set_phasefield(i) = 1; //lower bound
 		++number_active_constraint_lower_bound;
 	      }
-	    else if (   solution_phasefield_total[i] == 1.0
-		     && solution_delta.block(m_d_dof)[i] != 0.0)
+	    else if (   std::fabs(solution_delta.block(m_d_dof)[i] - 0.0) >= compare_tol
+		     && std::fabs(solution_phasefield_total[i] - 1.0) < compare_tol)
 	      {
 	        m_active_set_phasefield(i) = 2; //upper bound
 	        ++number_active_constraint_upper_bound;
@@ -6397,13 +6812,13 @@ namespace PhaseField
 	    tmp_solutions[0].reinit(m_dofs_per_block);
 	    tmp_solutions[1].reinit(m_dofs_per_block);
 
-            #  if DEAL_II_VERSION_GTE(9, 7, 0)
+#  if DEAL_II_VERSION_GTE(9, 7, 0)
 	    solution_transfer.interpolate(tmp_solutions);
-	    #  else
+#  else
 	    // If an older version of dealII is used, for example, 9.4.0, interpolate()
             // needs to use the following interface.
             solution_transfer.interpolate(old_solutions, tmp_solutions);
-            #  endif
+#  endif
 	    solution_next_step = tmp_solutions[0];
 	    m_solution = tmp_solutions[1];
 
@@ -6448,6 +6863,45 @@ namespace PhaseField
 	      << m_parameters.m_output_iteration_history << std::endl;
 
     m_logfile << "Phase-field model type = " << m_parameters.m_phasefield_name << std::endl;
+
+    if (m_parameters.m_phasefield_name == "AT2")
+      {
+	m_logfile << "\tPhase-field geometric function alpha(d) = d^2" << std::endl;
+	m_logfile << "\tPhase-field degradation function g(d) = (1-d)^2" << std::endl;
+      }
+    else if (m_parameters.m_phasefield_name == "AT1-Griffith")
+      {
+	m_logfile << "\tPhase-field geometric function alpha(d) = d" << std::endl;
+	m_logfile << "\tPhase-field degradation function g(d) = (1-d)^2" << std::endl;
+      }
+    else if (m_parameters.m_phasefield_name == "AT1-Cohesive")
+      {
+	m_logfile << "\tPhase-field geometric function alpha(d) = d" << std::endl;
+	m_logfile << "\tPhase-field degradation function g(d) ="
+	             " (1-d)^p / [(1-d)^p + a1*d + a1*a2*d^2 + a1*a3*d^3]" << std::endl;
+	m_logfile << "\t\tFor quasi-linear degradation function: p = 1, a2 = 0, a3 = 0;"
+	          << std::endl;
+	m_logfile << "\t\tFor quasi-quadratic degradation function: p = 2, a2 >= 1, a3 = 0;"
+		  << std::endl;
+      }
+    else if (m_parameters.m_phasefield_name == "PFCZM")
+      {
+	m_logfile << "\tPhase-field geometric function alpha(d) = 2*d -d^2" << std::endl;
+	m_logfile << "\tPhase-field degradation function g(d) ="
+	             " (1-d)^p / [(1-d)^p + a1*d + a1*a2*d^2 + a1*a3*d^3]" << std::endl;
+	m_logfile << "\t\tSuggested parameters:" << std::endl;
+	m_logfile << "\t\t\tLinear softening curve: "
+	          << "p = 2.0, a2 = -0.5, a3 = 0;" << std::endl;
+        m_logfile << "\t\t\tExponential softening curve: "
+	          << "p = 2.5, a2 = 0.1748, a3 = 0;" << std::endl;
+	m_logfile << "\t\t\tCornelissen softening curve: "
+	          << "p = 2.0, a2 = 1.3868, a3 = 0.9106 or 0.6566;" << std::endl;
+      }
+    else
+      {
+	AssertThrow(false,
+		    ExcMessage("Chosen phase-field model not implemented!"));
+      }
 
     if (dim == 2)
       {
