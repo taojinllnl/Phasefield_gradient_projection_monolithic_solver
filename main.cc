@@ -6051,7 +6051,7 @@ namespace PhaseField
 		    {{ op_uMuT, op_uMdT }},
 		    {{ op_dMuT, op_dMdT }}
 		}};
-
+		
 		const auto op_zT_wMwT_z = block_operator<2, 2, BlockVector<double>>(ops);
 
 		const auto op_total = op_zT_B0_z - op_zT_wMwT_z;
