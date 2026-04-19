@@ -20,9 +20,10 @@ The gradient projection operation for the phase-field method is defined as the f
 where lb_i and ub_i represent the lower bound and upper bound of the phase-field value at a finite element node i. Based on this projection, the phase-field value is strictly bounnded between 1.0 and the previous converged value to enforce the irreversibility.
 
 ### Latest update
-1. (Sept. 10th, 2025) Add a compiler marco so that the code also works for the older version of the deal.ii library due to the interface change of the function `interpolate()` in the `SolutionTransfer` class.
-2. (March 18th, 2026) Add an option to differentiate plane stress and plane strain in 2D cases.
+4. (April 18th, 2026) Add several phase-field models, ***including AT-2, AT-1 (Griffith), AT-1 (cohesive), and phase-field cohesive zone model (PFCZM)***.
 3. (March 19th, 2026) Add an option to choose between a secant gradient based line search and the strong Wolfe line search. The gradient based line search should be able to reduce the wall clock time by 30% to 50% comparing with the strong Wolfe line search.
+2. (March 18th, 2026) Add an option to differentiate plane stress and plane strain in 2D cases.
+1. (Sept. 10th, 2025) Add a compiler marco so that the code also works for the older version of the deal.ii library due to the interface change of the function `interpolate()` in the `SolutionTransfer` class.
 
 ### Content
 The repository contains the following content:
